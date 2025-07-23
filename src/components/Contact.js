@@ -3,15 +3,26 @@ import '../styles/contact.css'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faPhone, faEnvelope } from "@fortawesome/free-solid-svg-icons";
 import Mapsetup from "./Mapsetup";
+import websiteData from "../jsons/website_details.js";
+
 
 export default function Contact() {
   
   return (
     <div className="outter1"><br /><br />
       <h1>Contact</h1>
-      
-      <h3><FontAwesomeIcon icon={faPhone}/> 090007 79444</h3>
-      <h3><FontAwesomeIcon icon={faEnvelope}/> padmajapalms@gmail.com</h3><br />
+      {websiteData.Contact.Main.Numbers.map((number, index) => (
+        <h3 key={index}>  
+          <FontAwesomeIcon icon={faPhone} /> {number}
+        </h3> 
+      ))}
+     <br />
+      {websiteData.Contact.Main.Email.map((mail, index) => (
+        <h3 key={index}>  
+         <FontAwesomeIcon icon={faEnvelope}/> {mail}
+        </h3> 
+      ))}
+      <br />
       <h5> <span className="ss">
          ADDRESS: 
         </span>

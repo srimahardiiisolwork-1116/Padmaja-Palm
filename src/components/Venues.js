@@ -33,7 +33,7 @@ export default function Venues() {
         with a skilled group of experts. Everything will go according to your
         dreams from the moment you arrive until the moment you go.
       </p>
-
+      const emblaRefs = [emblaRef2,];
       {/* Lawn 1  */}
 
       <div className="villa">

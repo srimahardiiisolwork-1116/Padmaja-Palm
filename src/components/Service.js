@@ -20,7 +20,7 @@ export default function Service() {
                       <p>{data.matter}</p>
                     </div>
                     <div className="imgser">
-                      <img src={data.imglink} alt="" id="igsam"/>
+                      <img src={data.image[0]} alt="" id="igsam"/>
                     </div>
                   </div>
 
@@ -30,7 +30,7 @@ export default function Service() {
                 return(
                   <div className="maindivrev" key={sectionIndex}>
                     <div className="imgser">
-                      <img src={data.imglink} alt="" id="igsam"/>
+                      <img src={data.image[0]} alt="" id="igsam"/>
                     </div>
                     <div className="text1">
                       <h3>{type}</h3>

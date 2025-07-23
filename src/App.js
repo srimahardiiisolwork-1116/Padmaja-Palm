@@ -10,6 +10,9 @@ import Contact from "./components/Contact";
 import Footer from "./components/Footer";
 import Accomadation from "./components/Accomadation";
 import Venues from "./components/Venues";
+//import AdminDashBoard from "./components/AdminDashBoard";
+
+//import AdminApp from "./admin/AdminPanel";
 // import "../jsons/services.js";
 
 function App() {
@@ -27,6 +30,7 @@ function App() {
         <Route path="venues" element={<Venues/>}/>
         <Route path="gallery" element={<Gallery />} />
         <Route path="contact" element={<Contact />} />
+        {/* <Route path="admin" element={<AdminDashBoard />}/> */}
       </Routes>
      
       <Footer/>
