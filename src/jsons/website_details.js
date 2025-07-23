@@ -7,12 +7,7 @@ import img5 from "../asserts/resortpics/security.jpg"
 import img6 from "../asserts/resortpics/8.jpg"
 import img7 from "../asserts/resortpics/kitchen/1.JPG"
 import img8 from "../asserts/resortpics/6.jpg"
-import {
-  gazebopics,
-  parkingpics,
-  poolpics,
-} from "../jsons/accomadation_pics.js";
-import { Banquet, lawn, lawn22, ph,conv,ext } from "../jsons/venues_pics";
+import { Banquet} from "../jsons/venues_pics";
 
 const websiteData =
 {
