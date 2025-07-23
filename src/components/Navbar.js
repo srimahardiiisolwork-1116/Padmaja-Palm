@@ -4,7 +4,7 @@ import { FaBars, FaTimes } from "react-icons/fa";
 import { useRef } from "react";
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import logo from '../asserts/Padmaja_new_Logo.png';
+import logo from '../asserts/Landscape without bg.png';
 //import logo1 from '../asserts/Landscape without bg.png'
 
 export default function Navbar() {

@@ -1,9 +1,11 @@
 import React from "react";
 import "../styles/Footer.css";
-import imglogo from "../asserts/Padmaja_new_Logo.png";
+import imglogo from "../asserts/Landscape without bg.png";
 import { NavLink } from "react-router-dom";
 import { FaFacebook, FaInstagram, FaTwitter } from "react-icons/fa";
 import Mapsetup from "./Mapsetup";
+import websiteData from "../jsons/website_details.js";
+
 export default function Footer() {
   const scrolltopp = () => {
     window.scrollTo(0,0);
@@ -32,10 +34,11 @@ export default function Footer() {
             <h4>
             Call
             </h4>
-            <p>
-            090007 79444
-
-            </p>
+           
+             {websiteData.Contact.Main.Numbers.map((number, index) => (
+                  <p key ={index}>{number}</p>
+              ))}
+  
             </div>
         </div>
         <div className="comp3">
