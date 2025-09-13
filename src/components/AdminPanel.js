@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { API_BASE } from "../config";
 import "../styles/AdminPanel.css";
 
@@ -105,8 +105,30 @@ function AdminPanel() {
   const imageInputRef = useRef({});
   const videoInputRef = useRef({});
 
-  // Check authentication status helper (hoisted so it can be reused)
-  const checkAuthStatus = async () => {
+  // Fetch events (stabilized with useCallback for hook deps)
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(EVENTS_URL, {
+        credentials: "include",
+      });
+      if (res.status === 401) {
+        setIsAuthenticated(false);
+        setEvents([]);
+      } else {
+        const data = await res.json();
+        setEvents(Array.isArray(data.events) ? data.events : []);
+        setIsAuthenticated(true);
+      }
+    } catch {
+      setEvents([]);
+      setIsAuthenticated(false);
+    }
+    setLoading(false);
+  }, []);
+
+  // Check authentication status helper (stabilized with useCallback and depends on fetchEvents)
+  const checkAuthStatus = useCallback(async () => {
     try {
       // Ensure CSRF cookie exists for this POST
       await fetchCsrfToken();
@@ -135,34 +157,14 @@ function AdminPanel() {
       setIsAuthenticated(false);
       setEvents([]);
     }
-  };
+  }, [fetchEvents]);
 
   // Run auth check on mount
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+  }, [checkAuthStatus]);
 
-  // Fetch events
-  async function fetchEvents() {
-    setLoading(true);
-    try {
-      const res = await fetch(EVENTS_URL, {
-        credentials: "include",
-      });
-      if (res.status === 401) {
-        setIsAuthenticated(false);
-        setEvents([]);
-      } else {
-        const data = await res.json();
-        setEvents(Array.isArray(data.events) ? data.events : []);
-        setIsAuthenticated(true);
-      }
-    } catch {
-      setEvents([]);
-      setIsAuthenticated(false);
-    }
-    setLoading(false);
-  }
+  // fetchEvents defined above using useCallback
 
   // Login handler
   const handleLogin = async (e) => {
