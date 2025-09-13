@@ -1,15 +1,8 @@
 // Centralized app configuration for environment-aware settings
 // Note: CRA exposes only variables prefixed with REACT_APP_
 
-const inferDefaultApiBase = () => {
-  const isLocalhost = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
-  if (isLocalhost) return "http://localhost:8000";
-  const protocol = window.location.protocol === "http:" ? "https:" : window.location.protocol;
-  return `${protocol}//${window.location.hostname}`;
-};
-
-// Compute at runtime to avoid embedding environment value in the bundle
-export const API_BASE = inferDefaultApiBase();
+// Use the backend URL directly
+export const API_BASE = "/api"; // This will be proxied to https://padmaja-palm-backend.onrender.com
 export const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "";
 
 // Admin panel controls

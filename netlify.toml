@@ -1,21 +1,20 @@
-# example netlify.toml
 [build]
   command = "npm run build"
-  functions = "netlify/functions"
   publish = "build"
 
-  ## Uncomment to use this redirect for Single Page Applications like create-react-app.
-  ## Not needed for static site generators.
-  #[[redirects]]
-  #  from = "/*"
-  #  to = "/index.html"
-  #  status = 200
+[build.environment]
+  # Tell Netlify to ignore the Google Maps key in secrets scanning
+  SECRETS_SCAN_OMIT_KEYS = "REACT_APP_GOOGLE_MAPS_API_KEY"
 
-  ## (optional) Settings for Netlify Dev
-  ## https://github.com/netlify/cli/blob/main/docs/netlify-dev.md#project-detection
-  #[dev]
-  #  command = "yarn start" # Command to start your dev server
-  #  port = 3000 # Port that the dev server will be listening on
-  #  publish = "dist" # Folder with the static content for _redirect file
+# Proxy API requests to your backend
+[[redirects]]
+  from = "/api/*"
+  to = "https://padmaja-palm-backend.onrender.com/:splat"
+  status = 200
+  force = true
 
-  ## more info on configuring this file: https://ntl.fyi/file-based-build-config
+# Handle client-side routing - return index.html for all routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
