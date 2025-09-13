@@ -8,7 +8,8 @@ const inferDefaultApiBase = () => {
   return `${protocol}//${window.location.hostname}`;
 };
 
-export const API_BASE = process.env.REACT_APP_API_BASE || inferDefaultApiBase();
+// Compute at runtime to avoid embedding environment value in the bundle
+export const API_BASE = inferDefaultApiBase();
 export const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "";
 
 // Admin panel controls
