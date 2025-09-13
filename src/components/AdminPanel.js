@@ -196,15 +196,22 @@ function AdminPanel() {
       console.log("5. Login response status:", res.status);
       console.log("6. Response headers:", Object.fromEntries(res.headers.entries()));
       
+      // Safely parse JSON; if backend returned HTML (e.g., 404),
+      // use a cloned response to read text to avoid 'body stream already read'.
       let data;
       try {
-        data = await res.json();
-        console.log("7. Response data:", data);
-      } catch (jsonError) {
-        console.error("Failed to parse JSON response:", jsonError);
-        const text = await res.text();
-        console.error("Raw response:", text);
-        throw new Error(`Invalid response from server: ${text}`);
+        const clone = res.clone();
+        try {
+          data = await res.json();
+          console.log("7. Response data:", data);
+        } catch (jsonError) {
+          console.error("Failed to parse JSON response:", jsonError);
+          const text = await clone.text();
+          console.error("Raw response:", text);
+          throw new Error(`Invalid response from server: ${text}`);
+        }
+      } catch (e) {
+        throw e;
       }
       
       if (data.success) {
