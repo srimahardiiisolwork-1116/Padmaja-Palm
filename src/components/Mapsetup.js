@@ -1,5 +1,6 @@
 import React from 'react'
 import { GoogleMap, useJsApiLoader } from '@react-google-maps/api';
+import { GOOGLE_MAPS_API_KEY } from '../config';
 
 const containerStyle = {
   width: '100%',
@@ -13,7 +14,7 @@ const center = {
 function MyComponent({zooml}) {
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
-    googleMapsApiKey: "AIzaSyAQMRfBHg6Wayhqx-oA9zjfb5wwl6k5B3Y"
+    googleMapsApiKey: GOOGLE_MAPS_API_KEY
     
   })
 
