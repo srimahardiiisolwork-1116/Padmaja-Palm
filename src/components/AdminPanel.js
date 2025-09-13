@@ -398,6 +398,12 @@ function AdminPanel() {
       setUploadError((prev) => ({ ...prev, videos: { ...prev.videos, [eventId]: msg } }));
       return;
     }
+    // Client-side file size validation (100MB)
+    if (file.size > MAX_VIDEO_MB * 1024 * 1024) {
+      const msg = `Video file too large. Got ${toMB(file.size)} MB. Maximum is ${MAX_VIDEO_MB} MB.`;
+      setUploadError((prev) => ({ ...prev, videos: { ...prev.videos, [eventId]: msg } }));
+      return;
+    }
     const formData = new FormData();
     formData.append("video", file);
     const csrfToken = getCookie("csrftoken");
