@@ -38,6 +38,7 @@ export default function Navbar() {
           <NavLink onClick={showNavbar} to="accommodation">Accommodation</NavLink>
           <NavLink onClick={showNavbar} to="venues">Venues</NavLink>
           <NavLink onClick={showNavbar} to="gallery">Gallery</NavLink>
+          <NavLink onClick={showNavbar} to="events">Events</NavLink>
           <NavLink onClick={showNavbar} to="contact">Contact us</NavLink>
           <button className="navbtn navclsbtn" onClick={showNavbar} >
             <FaTimes />

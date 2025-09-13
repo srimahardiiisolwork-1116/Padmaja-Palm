@@ -10,6 +10,9 @@ import Contact from "./components/Contact";
 import Footer from "./components/Footer";
 import Accomadation from "./components/Accomadation";
 import Venues from "./components/Venues";
+import Events from "./components/Events";
+import EventDetails from "./components/EventDetails";
+import AdminPanel from "./components/AdminPanel";
 //import AdminDashBoard from "./components/AdminDashBoard";
 
 //import AdminApp from "./admin/AdminPanel";
@@ -30,7 +33,9 @@ function App() {
         <Route path="venues" element={<Venues/>}/>
         <Route path="gallery" element={<Gallery />} />
         <Route path="contact" element={<Contact />} />
-        {/* <Route path="admin" element={<AdminDashBoard />}/> */}
+        <Route path="events" element={<Events />} />
+        <Route path="events/:id" element={<EventDetails />} />
+        <Route path="admin" element={<AdminPanel />} />
       </Routes>
      
       <Footer/>
