@@ -35,7 +35,7 @@ function App() {
         <Route path="contact" element={<Contact />} />
         <Route path="events" element={<Events />} />
         <Route path="events/:id" element={<EventDetails />} />
-        <Route path="admin" element={<AdminPanel />} />
+        <Route path="prcadmin" element={<AdminPanel />} />
       </Routes>
      
       <Footer/>

@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaChevronLeft } from 'react-icons/fa';
 import axios from 'axios';
@@ -36,6 +38,18 @@ const EventDetails = () => {
   const [activeTab, setActiveTab] = useState('photos');
   const [previewImg, setPreviewImg] = useState(null);
   const videoRef = useRef(null);
+  // Embla (mobile/tablet) state for dots
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollSnaps, setScrollSnaps] = useState([]);
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    {
+      loop: true,
+      align: 'start',
+      dragFree: false,
+      skipSnaps: false,
+    },
+    [Autoplay({ delay: 3500, stopOnInteraction: true })]
+  );
 
   useEffect(() => {
     if (!document.getElementById("eventdetails-anim")) {
@@ -50,6 +64,18 @@ const EventDetails = () => {
       document.head.appendChild(style);
     }
   }, []);
+
+  // Setup Embla dots & selection when API ready
+  useEffect(() => {
+    if (!emblaApi) return;
+    setScrollSnaps(emblaApi.scrollSnapList());
+    const onSelect = () => setSelectedIndex(emblaApi.selectedScrollSnap());
+    emblaApi.on('select', onSelect);
+    onSelect();
+    return () => {
+      emblaApi.off('select', onSelect);
+    };
+  }, [emblaApi]);
 
   const fetchEvent = useCallback(async () => {
     if (!id) {
@@ -243,25 +269,57 @@ const EventDetails = () => {
         {activeTab === "photos" && (
           <div className="eventdetails-photos">
             {hasPhotos ? (
-              photoRows.map((row, rowIdx) => (
-                <div key={rowIdx} className="eventdetails-photo-row">
-                  {row.map((img, index) => (
-                    <img
-                      key={img.id || index}
-                      src={resolveUrl(img.url)}
-                      alt={event.name}
-                      className="eventdetails-photo"
-                      onClick={() => setPreviewImg(resolveUrl(img.url))}
-                      onContextMenu={(e) => e.preventDefault()}
-                      draggable={false}
-                    />
+              <>
+                {/* Mobile: Carousel */}
+                <div className="eventdetails-carousel mobile-only">
+                  <div className="embla" ref={emblaRef}>
+                    <div className="embla__container">
+                      {event.images.map((img, index) => (
+                        <div className="embla__slide" key={img.id || index}>
+                          <img
+                            src={resolveUrl(img.url)}
+                            alt={event.name}
+                            className="embla__slide__img"
+                            draggable={false}
+                            onClick={() => setPreviewImg(resolveUrl(img.url))}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="embla__dots">
+                      {scrollSnaps.map((_, idx) => (
+                        <button
+                          key={idx}
+                          className={`embla__dot ${idx === selectedIndex ? 'is-selected' : ''}`}
+                          onClick={() => emblaApi && emblaApi.scrollTo(idx)}
+                          aria-label={`Go to slide ${idx + 1}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Desktop/Tablet: existing grid */}
+                <div className="desktop-only">
+                  {photoRows.map((row, rowIdx) => (
+                    <div key={rowIdx} className="eventdetails-photo-row">
+                      {row.map((img, index) => (
+                        <img
+                          key={img.id || index}
+                          src={resolveUrl(img.url)}
+                          alt={event.name}
+                          className="eventdetails-photo"
+                          onClick={() => setPreviewImg(resolveUrl(img.url))}
+                          onContextMenu={(e) => e.preventDefault()}
+                          draggable={false}
+                        />
+                      ))}
+                    </div>
                   ))}
                 </div>
-              ))
+              </>
             ) : (
-              <div className="eventdetails-empty">
-                No photos available
-              </div>
+              <div className="eventdetails-empty">No photos available</div>
             )}
           </div>
         )}

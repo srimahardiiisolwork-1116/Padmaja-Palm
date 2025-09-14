@@ -57,6 +57,9 @@ function AdminPanel() {
   const [uploadProgress, setUploadProgress] = useState({ images: {}, videos: {} });
   const [uploadError, setUploadError] = useState({ images: {}, videos: {} });
   const [processing, setProcessing] = useState({ images: {}, videos: {} });
+  // Creation form: hard cap for number of images
+  const MAX_CREATE_IMAGES = 5;
+  const [createImagesError, setCreateImagesError] = useState("");
   const clearUploadError = (type, eventId) => {
     setUploadError((prev) => ({ ...prev, [type]: { ...prev[type], [eventId]: null } }));
   };
@@ -104,6 +107,7 @@ function AdminPanel() {
 
   const imageInputRef = useRef({});
   const videoInputRef = useRef({});
+  const createImageInputRef = useRef(null);
 
   // Fetch events (stabilized with useCallback for hook deps)
   const fetchEvents = useCallback(async () => {
@@ -255,11 +259,15 @@ function AdminPanel() {
         alert("Please select at least one image to create an event.");
         return;
       }
+      if (newEventImages.length > MAX_CREATE_IMAGES) {
+        alert(`You can upload a maximum of ${MAX_CREATE_IMAGES} images when creating an event.`);
+        return;
+      }
       const fd = new FormData();
       fd.append("name", form.name);
       fd.append("date", form.date);
       fd.append("description", form.description);
-      for (const f of newEventImages) fd.append("images", f);
+      for (const f of newEventImages.slice(0, MAX_CREATE_IMAGES)) fd.append("images", f);
       await fetch(EVENTS_URL, {
         method: "POST",
         headers: { "X-CSRFToken": csrfToken },
@@ -717,6 +725,9 @@ function AdminPanel() {
                   <button onClick={() => imageInputRef.current[event.id]?.click()}>
                     + Add Image
                   </button>
+                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+                    Recommended: 16:9 — 1280×720 px or 1920×1080 px. Max 5 images per event. Max 10 MB each.
+                  </div>
                   {typeof uploadProgress.images[event.id] === 'number' && uploadProgress.images[event.id] > 0 && (
                     <div style={{ marginTop: 6 }}>
                       <div className="progress-wrap">
@@ -836,17 +847,59 @@ function AdminPanel() {
             />
             {!editingEvent && (
               <div>
-                <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>Images (at least 1 required)</label>
+                <label style={{ fontWeight: 600, display: 'block', marginBottom: 6 }}>
+                  Images (at least 1 required, max 5)
+                </label>
+                <div style={{ fontSize: 12, color: '#666', marginBottom: 6 }}>
+                  Recommended: <strong>16:9 aspect</strong> — <strong>1280×720 px</strong> (HD) or <strong>1920×1080 px</strong> (Full HD).<br />
+                  Minimum safe: <strong>800×450 px</strong>. Max per file: <strong>10 MB</strong>.
+                </div>
                 <input
                   type="file"
                   accept="image/*"
                   multiple
-                  onChange={(e) => setNewEventImages(Array.from(e.target.files || []))}
+                  onChange={(e) => {
+                    const files = Array.from(e.target.files || []);
+                    if (files.length > MAX_CREATE_IMAGES) {
+                      setNewEventImages(files.slice(0, MAX_CREATE_IMAGES));
+                      setCreateImagesError(`Only ${MAX_CREATE_IMAGES} images allowed. Extra files have been ignored.`);
+                    } else {
+                      setCreateImagesError("");
+                      setNewEventImages(files);
+                    }
+                  }}
+                  ref={createImageInputRef}
                   required
                 />
+                <div style={{ fontSize: 12, marginTop: 6 }}>
+                  Selected: {Math.min(newEventImages.length, MAX_CREATE_IMAGES)}/{MAX_CREATE_IMAGES}
+                </div>
+                {createImagesError && (
+                  <div style={{ fontSize: 12, marginTop: 4, display: 'flex', alignItems: 'center', gap: 8 }} className="error-text">
+                    <span>{createImagesError}</span>
+                    <button
+                      type="button"
+                      onClick={() => setCreateImagesError("")}
+                      style={{ padding: '2px 6px' }}
+                    >
+                      Dismiss
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewEventImages([]);
+                        setCreateImagesError("");
+                        if (createImageInputRef.current) createImageInputRef.current.value = null;
+                      }}
+                      style={{ padding: '2px 6px' }}
+                    >
+                      Clear selection
+                    </button>
+                  </div>
+                )}
                 {newEventImages && newEventImages.length > 0 && (
                   <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {newEventImages.slice(0, 5).map((f, idx) => (
+                    {newEventImages.slice(0, MAX_CREATE_IMAGES).map((f, idx) => (
                       <img
                         key={idx}
                         src={URL.createObjectURL(f)}
@@ -855,17 +908,21 @@ function AdminPanel() {
                         onLoad={(ev) => URL.revokeObjectURL(ev.target.src)}
                       />
                     ))}
-                    {newEventImages.length > 5 && (
-                      <span style={{ alignSelf: 'center', color: '#666' }}>+{newEventImages.length - 5} more</span>
+                    {newEventImages.length > MAX_CREATE_IMAGES && (
+                      <div style={{ fontSize: 12, alignSelf: 'center' }}>
+                        + {newEventImages.length - MAX_CREATE_IMAGES} more (hidden)
+                      </div>
                     )}
                   </div>
                 )}
               </div>
             )}
-            <button type="submit">Save</button>
-            <button type="button" onClick={() => setShowForm(false)}>
-              Cancel
-            </button>
+
+            {/* Form actions */}
+            <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button type="button" onClick={() => setShowForm(false)}>Cancel</button>
+              <button type="submit">Save</button>
+            </div>
           </form>
         </div>
       )}
@@ -987,9 +1044,6 @@ function AdminPanel() {
                 </div>
                 <div style={{ marginBottom: 12 }}>
                   <strong>Cloudinary Account Usage (from API):</strong>
-                  <div style={{ fontSize: 14 }}>
-                    Plan: {(storageData.overall && storageData.overall.plan) || "-"}
-                  </div>
                   {storageData.overall_storage && (
                     <div style={{ fontSize: 14 }}>
                       {(() => {

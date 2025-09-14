@@ -59,11 +59,25 @@
 .icons{
     padding: 5px;
   cursor: pointer;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: var(--textColor);
-  
+  background: transparent !important;
+  border: none !important;
+  outline: none !important;
+  color: #000 !important; /* text/icon color */
+  box-shadow: none !important;
+}
+/* Keep icons plain black in all states */
+.icons:hover,
+.icons:focus,
+.icons:active {
+  color: #000 !important;
+  background: transparent !important;
+}
+/* Increase specificity within footer and ensure SVG inherits black */
+.comp4 .icons,
+.comp4 .icons svg,
+.comp4 .icons svg path {
+  color: #000 !important;
+  fill: #000 !important;
 }
 .map{
     height: 100%;

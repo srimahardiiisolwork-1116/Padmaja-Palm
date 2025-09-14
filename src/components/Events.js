@@ -77,9 +77,9 @@ const Events = () => {
 
   // Handle image loading errors with a fallback
   const handleImageError = (e) => {
-    if (e.target.src !== 'https://via.placeholder.com/400x300?text=Event+Image') {
+    if (e.target.src !== 'https://via.placeholder.com/1280x720?text=Event+Image') {
       e.target.onerror = null;
-      e.target.src = 'https://via.placeholder.com/400x300?text=Event+Image';
+      e.target.src = 'https://via.placeholder.com/1280x720?text=Event+Image';
     }
   };
 
@@ -166,7 +166,7 @@ const Events = () => {
           >
             <div className="event-image-container">
               <img 
-                src={getImageUrl(event.profile_image) || getImageUrl(event.images?.[0]) || 'https://via.placeholder.com/1200x600?text=Event+Image'} 
+                src={getImageUrl(event.profile_image) || getImageUrl(event.images?.[0]) || 'https://via.placeholder.com/1280x720?text=Event+Image'} 
                 alt={event.name}
                 className="event-image"
                 loading="lazy"
