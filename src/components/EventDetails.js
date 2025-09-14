@@ -197,12 +197,14 @@ const EventDetails = () => {
     console.log('Video URL:', resolveUrl(video.url || video));
   }
 
+  // Sort images with cover picture first
+  const sortedImages = hasPhotos ? [...event.images].sort((a, b) => (b.is_profile ? 1 : 0) - (a.is_profile ? 1 : 0)) : [];
   // Split photos: always first 3 in first row, second row only if > 3
   const photoRows = [];
   if (hasPhotos) {
-    photoRows.push(event.images.slice(0, 3));
-    if (event.images.length > 3) {
-      photoRows.push(event.images.slice(3, 5));
+    photoRows.push(sortedImages.slice(0, 3));
+    if (sortedImages.length > 3) {
+      photoRows.push(sortedImages.slice(3, 5));
     }
   }
 
@@ -274,7 +276,7 @@ const EventDetails = () => {
                 <div className="eventdetails-carousel mobile-only">
                   <div className="embla" ref={emblaRef}>
                     <div className="embla__container">
-                      {event.images.map((img, index) => (
+                      {sortedImages.map((img, index) => (
                         <div className="embla__slide" key={img.id || index}>
                           <img
                             src={resolveUrl(img.url)}

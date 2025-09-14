@@ -42,6 +42,12 @@ function AdminPanel() {
   const [loginError, setLoginError] = useState("");
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(false);
+  // Loader shown after successful login while portal loads
+  const [postLoginLoading, setPostLoginLoading] = useState(false);
+  // Loader shown after submitting Add/Edit Event while events refresh
+  const [saving, setSaving] = useState(false);
+  // Deleting loaders per item type
+  const [deleting, setDeleting] = useState({ events: {}, images: {}, videos: {} });
   const [editingEvent, setEditingEvent] = useState(null);
   const [form, setForm] = useState({ name: "", date: "", description: "" });
   const [showForm, setShowForm] = useState(false);
@@ -64,13 +70,48 @@ function AdminPanel() {
     setUploadError((prev) => ({ ...prev, [type]: { ...prev[type], [eventId]: null } }));
   };
 
-  // Admin-only download via signed Cloudinary URL
+  // Admin-only download via signed Cloudinary URL (force local download)
+  const triggerDownload = (url, filename = '') => {
+    try {
+      const a = document.createElement('a');
+      a.href = url;
+      if (filename) a.download = filename;
+      a.rel = 'noopener';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      // last resort
+      window.location.href = url;
+    }
+  };
+
+  // Try to derive filename from Content-Disposition header
+  const filenameFromHeaders = (headers, fallback) => {
+    try {
+      const cd = headers.get('content-disposition');
+      if (!cd) return fallback;
+      const match = cd.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+      const name = decodeURIComponent(match?.[1] || match?.[2] || '');
+      return name || fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
   const handleAdminDownloadImage = async (eventId, imageId) => {
     try {
       const res = await fetch(DOWNLOAD_IMAGE_URL(eventId, imageId), { credentials: 'include' });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to get download link');
-      window.open(data.url, '_blank');
+      // IMPORTANT: Do NOT modify the signed Cloudinary URL, just fetch as-is
+      const fileRes = await fetch(data.url, { credentials: 'omit' });
+      if (!fileRes.ok) throw new Error('Failed to fetch file for download');
+      const blob = await fileRes.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const fname = filenameFromHeaders(fileRes.headers, `event-${eventId}-image-${imageId}.jpg`);
+      triggerDownload(objectUrl, fname);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
     } catch (e) {
       alert(e.message || 'Failed to download image');
     }
@@ -81,7 +122,13 @@ function AdminPanel() {
       const res = await fetch(DOWNLOAD_VIDEO_URL(eventId, videoId), { credentials: 'include' });
       const data = await res.json();
       if (!res.ok) throw new Error(data?.error || 'Failed to get download link');
-      window.open(data.url, '_blank');
+      const fileRes = await fetch(data.url, { credentials: 'omit' });
+      if (!fileRes.ok) throw new Error('Failed to fetch file for download');
+      const blob = await fileRes.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const fname = filenameFromHeaders(fileRes.headers, `event-${eventId}-video-${videoId}.mp4`);
+      triggerDownload(objectUrl, fname);
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 10000);
     } catch (e) {
       alert(e.message || 'Failed to download video');
     }
@@ -94,6 +141,13 @@ function AdminPanel() {
 
   // Helpers for analytics UI
   const bytesToGB = (b) => (typeof b === 'number' ? (b / (1024 * 1024 * 1024)).toFixed(2) : null);
+  // Format bytes to MB if small, otherwise GB
+  const formatBytesSmart = (b) => {
+    if (typeof b !== 'number') return '0.00 MB';
+    const oneGB = 1024 * 1024 * 1024;
+    if (b < oneGB) return `${(b / (1024 * 1024)).toFixed(2)} MB`;
+    return `${(b / oneGB).toFixed(2)} GB`;
+  };
   const percent = (used, limit) => {
     if (typeof used !== 'number' || typeof limit !== 'number' || limit <= 0) return null;
     return Math.min(100, Math.max(0, (used / limit) * 100));
@@ -220,9 +274,12 @@ function AdminPanel() {
       
       if (data.success) {
         console.log("7. Login successful");
-        // Optimistically set authenticated and load events immediately
-        setIsAuthenticated(true);
+        // Show loading indicator while we prepare the portal
+        setPostLoginLoading(true);
+        // Load events before entering portal
         await fetchEvents();
+        setIsAuthenticated(true);
+        setPostLoginLoading(false);
         // Also trigger background confirmation (does not block UI)
         checkAuthStatus();
       } else {
@@ -253,14 +310,17 @@ function AdminPanel() {
   const handleSave = async (e) => {
     e.preventDefault();
     const csrfToken = getCookie("csrftoken");
+    setSaving(true);
     // Create: enforce at least one image and use multipart
     if (!editingEvent) {
       if (!newEventImages || newEventImages.length === 0) {
         alert("Please select at least one image to create an event.");
+        setSaving(false);
         return;
       }
       if (newEventImages.length > MAX_CREATE_IMAGES) {
         alert(`You can upload a maximum of ${MAX_CREATE_IMAGES} images when creating an event.`);
+        setSaving(false);
         return;
       }
       const fd = new FormData();
@@ -288,18 +348,21 @@ function AdminPanel() {
       });
     }
     setShowForm(false);
-    fetchEvents();
+    await fetchEvents();
+    setSaving(false);
   };
 
   // Delete event
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this event?")) return;
     const csrfToken = getCookie("csrftoken");
+    setDeleting((prev) => ({ ...prev, events: { ...prev.events, [id]: true } }));
     await fetch(`${EVENTS_URL}${id}/`, {
       method: "DELETE",
       headers: { "X-CSRFToken": csrfToken },
       credentials: "include",
     });
+    setDeleting((prev) => ({ ...prev, events: { ...prev.events, [id]: false } }));
     fetchEvents();
   };
 
@@ -373,6 +436,7 @@ function AdminPanel() {
   const handleImageDelete = async (eventId, imageId) => {
     if (!window.confirm("Delete this image?")) return;
     const csrfToken = getCookie("csrftoken");
+    setDeleting((prev) => ({ ...prev, images: { ...prev.images, [imageId]: true } }));
     const res = await fetch(`${IMAGES_URL}${eventId}/${imageId}/`, {
       method: "DELETE",
       headers: { "X-CSRFToken": csrfToken },
@@ -382,6 +446,7 @@ function AdminPanel() {
       const data = await res.json().catch(() => ({}));
       alert(data.error || "Failed to delete image");
     }
+    setDeleting((prev) => ({ ...prev, images: { ...prev.images, [imageId]: false } }));
     fetchEvents();
   };
 
@@ -398,7 +463,7 @@ function AdminPanel() {
         body: JSON.stringify({ is_profile: true }),
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || "Failed to set profile image");
+      if (!res.ok) throw new Error(data.error || "Failed to set cover picture");
       fetchEvents();
     } catch (e) {
       alert(e.message);
@@ -438,26 +503,19 @@ function AdminPanel() {
         (pct) => setUploadProgress((prev) => ({ ...prev, videos: { ...prev.videos, [eventId]: pct } }))
       );
       setUploadProgress((prev) => ({ ...prev, videos: { ...prev.videos, [eventId]: 100 } }));
-      // Start processing indicator and poll until the video URL becomes available
+      // Show processing loader and refresh once after the asset is ready
       setProcessing((prev) => ({ ...prev, videos: { ...prev.videos, [eventId]: true } }));
-      // Refresh event to get the latest URL
-      await fetchEvents();
-      // Find the uploaded video's URL
-      const ev = events.find((e) => e.id === eventId);
-      const videoUrl = ev?.video?.url ? getFullUrl(ev.video.url) : null;
+      // Fetch events once to get the video URL
+      const res = await fetch(`${EVENTS_URL}${eventId}/`, { credentials: 'include' });
+      const evData = await res.json().catch(() => ({}));
+      const videoUrl = evData?.video?.url ? getFullUrl(evData.video.url) : null;
       if (videoUrl) {
         await waitForResource(videoUrl, 90000, 4000);
       } else {
-        // Fallback: wait a bit then refetch a couple of times
-        for (let i = 0; i < 5; i++) {
-          await new Promise((r) => setTimeout(r, 3000));
-          await fetchEvents();
-          const ev2 = events.find((e) => e.id === eventId);
-          const v2 = ev2?.video?.url ? getFullUrl(ev2.video.url) : null;
-          if (v2) break;
-        }
+        // If URL not immediately available, wait a bit for processing
+        await new Promise((r) => setTimeout(r, 5000));
       }
-      // Final refresh and clear indicators
+      // Final refresh once
       await fetchEvents();
       setProcessing((prev) => ({ ...prev, videos: { ...prev.videos, [eventId]: false } }));
       // Clear progress after a short delay
@@ -535,11 +593,13 @@ function AdminPanel() {
   const handleVideoDelete = async (eventId, videoId) => {
     if (!window.confirm("Delete this video?")) return;
     const csrfToken = getCookie("csrftoken");
+    setDeleting((prev) => ({ ...prev, videos: { ...prev.videos, [eventId]: true } }));
     await fetch(`${VIDEOS_URL}${eventId}/${videoId}/`, {
       method: "DELETE",
       headers: { "X-CSRFToken": csrfToken },
       credentials: "include",
     });
+    setDeleting((prev) => ({ ...prev, videos: { ...prev.videos, [eventId]: false } }));
     fetchEvents();
   };
 
@@ -607,8 +667,13 @@ function AdminPanel() {
   if (!isAuthenticated) {
     return (
       <div className="login-page">
+        {postLoginLoading ? (
+          <div className="login-loading">
+            <p>Loading admin portal...</p>
+          </div>
+        ) : (
         <form className="login-form" onSubmit={handleLogin}>
-          <h2>Admin Login</h2>
+          <h2 style={{ textAlign: 'center' }}>Admin Login</h2>
           {loginError && <div className="error-text">{loginError}</div>}
           <input
             type="text"
@@ -634,8 +699,9 @@ function AdminPanel() {
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
-          <button type="submit">Login</button>
+          <button type="submit" className="login-submit">Login</button>
         </form>
+        )}
       </div>
     );
   }
@@ -647,7 +713,6 @@ function AdminPanel() {
         <div>
           <button onClick={handleLogout}>Logout</button>
           <button onClick={() => openForm()}>+ Add Event</button>
-          <button onClick={() => setShowUserForm(true)}>Check User</button>
           <button onClick={handleCheckStorage}>Check Storage</button>
         </div>
       </div>
@@ -690,10 +755,16 @@ function AdminPanel() {
                     >
                       Delete Event
                     </button>
+                    {deleting.events[event.id] && (
+                      <div style={{ marginTop: 6 }}>
+                        <div className="progress-wrap"><div className="progress-bar indeterminate" /></div>
+                        <div style={{ fontSize: 12, marginTop: 4 }}>Deleting event...</div>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="event-images">
-                  {event.images && event.images.map((img) => (
+                  {event.images && [...event.images].sort((a,b) => (b.is_profile ? 1 : 0) - (a.is_profile ? 1 : 0)).map((img) => (
                     <div key={img.id} className="thumb-wrap">
                       <img
                         src={getFullUrl(img.url)}
@@ -701,14 +772,15 @@ function AdminPanel() {
                         className="image-thumbnail"
                         onClick={() => setPreviewImage(getFullUrl(img.url))}
                       />
-                      <button
-                        className={`set-profile-btn ${img.is_profile ? 'active' : ''}`}
-                        onClick={() => handleSetProfileImage(event.id, img.id)}
-                        title={img.is_profile ? "Profile image" : "Set as profile"}
-                        disabled={img.is_profile}
-                      >
-                        ★
-                      </button>
+                      <label className="cover-checkbox" style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                        <input
+                          type="checkbox"
+                          checked={!!img.is_profile}
+                          onChange={() => handleSetProfileImage(event.id, img.id)}
+                          disabled={img.is_profile}
+                        />
+                        <span>Set as cover picture</span>
+                      </label>
                       <div className="image-controls">
                         <button onClick={() => handleImageDelete(event.id, img.id)}>
                           Delete
@@ -717,8 +789,14 @@ function AdminPanel() {
                           Download
                         </button>
                       </div>
+                      {deleting.images[img.id] && (
+                        <div style={{ marginTop: 6 }}>
+                          <div className="progress-wrap"><div className="progress-bar indeterminate" /></div>
+                          <div style={{ fontSize: 12, marginTop: 4 }}>Deleting image...</div>
+                        </div>
+                      )}
                       {img.is_profile && (
-                        <div className="profile-badge">Profile</div>
+                        <div className="profile-badge">Cover Picture</div>
                       )}
                     </div>
                   ))}
@@ -789,6 +867,12 @@ function AdminPanel() {
                       <div className="progress-bar indeterminate" />
                     </div>
                     <div style={{ fontSize: 12, marginTop: 4 }}>Processing video on server...</div>
+                  </div>
+                )}
+                {deleting.videos[event.id] && (
+                  <div style={{ marginTop: 6 }}>
+                    <div className="progress-wrap"><div className="progress-bar indeterminate" /></div>
+                    <div style={{ fontSize: 12, marginTop: 4 }}>Deleting video...</div>
                   </div>
                 )}
                 {uploadError.videos[event.id] && (
@@ -1073,16 +1157,16 @@ function AdminPanel() {
                         <div><strong>{ev.event_name}</strong></div>
                         <div style={{ fontSize: 14 }}>
                           {(() => {
-                            const imgGB = bytesToGB(ev.images?.bytes || 0);
-                            const vidGB = bytesToGB(ev.videos?.bytes || 0);
-                            const totalGB = bytesToGB(ev.total_bytes || 0);
+                            const imgBytes = ev.images?.bytes || 0;
+                            const vidBytes = ev.videos?.bytes || 0;
+                            const totalBytes = ev.total_bytes || 0;
                             return (
                               <>
-                                Images: {imgGB ? `${imgGB} GB` : '0.00 GB'} ({ev.images?.count || 0} files)
+                                Images: {formatBytesSmart(imgBytes)} ({ev.images?.count || 0} files)
                                 {" | "}
-                                Videos: {vidGB ? `${vidGB} GB` : '0.00 GB'} ({ev.videos?.count || 0} files)
+                                Videos: {formatBytesSmart(vidBytes)} ({ev.videos?.count || 0} files)
                                 {" | "}
-                                Total: {totalGB ? `${totalGB} GB` : '0.00 GB'}
+                                Total: {formatBytesSmart(totalBytes)}
                               </>
                             );
                           })()}
@@ -1096,6 +1180,16 @@ function AdminPanel() {
             <div style={{ marginTop: 16, textAlign: "right" }}>
               <button onClick={() => setShowStorageModal(false)}>Close</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Global overlay loader for saving states */}
+      {saving && (
+        <div className="modal-overlay">
+          <div className="form-modal" style={{ textAlign: 'center' }}>
+            <h3>Saving changes...</h3>
+            <p>Please wait while we refresh the admin page.</p>
           </div>
         </div>
       )}

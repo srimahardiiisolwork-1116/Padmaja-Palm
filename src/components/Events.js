@@ -53,16 +53,14 @@ const Events = () => {
     return "";
   };
 
-  // Format date with time
+  // Format date (without time)
   const formatEventDate = (dateString) => {
     if (!dateString) return '';
     const options = { 
       weekday: 'short', 
       year: 'numeric', 
       month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      day: 'numeric'
     };
     return new Date(dateString).toLocaleDateString('en-US', options);
   };

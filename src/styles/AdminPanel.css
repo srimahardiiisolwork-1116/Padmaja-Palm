@@ -669,6 +669,7 @@ button:not(.delete-btn):hover {
 
 .login-form h2 {
   margin: 0 0 12px 0;
+  text-align: center;
 }
 
 .login-form input {
@@ -677,6 +678,11 @@ button:not(.delete-btn):hover {
   margin: 8px 0;
   border-radius: 6px;
   border: 1px solid #ddd;
+}
+
+.login-form .login-submit {
+  display: block;
+  margin: 12px auto 0;
 }
 
 /* Password toggle in login */
