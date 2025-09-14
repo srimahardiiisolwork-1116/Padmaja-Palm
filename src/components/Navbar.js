@@ -9,9 +9,20 @@ import logo from '../asserts/Landscape without bg.png';
 
 export default function Navbar() {
   const navref = useRef();
+  const headerRef = useRef();
   const showNavbar = () => {
+    if (!navref.current) return;
+    // Toggle responsive overlay on mobile/tablets; background remains scrollable
     navref.current.classList.toggle("responsive_nav");
-    window.scrollTo(0,0);
+    const open = navref.current.classList.contains("responsive_nav");
+    // Elevate header stacking when menu is open so it can overlay any page stacking context
+    if (headerRef.current) {
+      headerRef.current.classList.toggle("header-open", open);
+    }
+    // Optional UX: scroll to top when opening
+    if (open) {
+      window.scrollTo(0, 0);
+    }
   };
   const [color, setcolor] = useState("rgba(255, 255, 255, 0.6)");
   function setscroll() {
@@ -27,7 +38,7 @@ export default function Navbar() {
   window.addEventListener("scroll", setscroll);
   return (
     <div className="navvv">
-      <header style={{ background: color}}>
+      <header ref={headerRef} style={{ background: color}}>
         <NavLink onClick={scrolltop} to="/">
       <img src={logo} alt="" className="img1" />
         </NavLink>

@@ -381,6 +381,15 @@
   .event-details-button {
     padding: 0.9rem 1.5rem;
   }
+
+  /* Ensure navbar overlay is above events content on mobile */
+  .events-page,
+  .events-container,
+  .event-card,
+  .events-header {
+    position: relative;
+    z-index: 1;
+  }
 }
 
 @media (max-width: 576px) {

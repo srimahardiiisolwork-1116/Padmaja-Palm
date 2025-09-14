@@ -779,6 +779,16 @@ button:not(.delete-btn):hover {
   .video-row video { max-width: 100%; max-height: 320px; }
   button { font-size: 12px; padding: 6px 10px; }
   .login-form { width: 92%; padding: 18px; }
+
+  /* Ensure navbar overlay is above admin content on mobile */
+  .admin-container,
+  .event-section,
+  .event-card,
+  .video-row,
+  .video-row video {
+    position: relative;
+    z-index: 1 !important;
+  }
 }
 
 @media (max-width: 480px) {

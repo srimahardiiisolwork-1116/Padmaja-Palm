@@ -16,6 +16,13 @@
   --textColor: black;
 }
 
+/* When nav is open, prevent background scrolling */
+body.nav-open {
+  overflow: hidden;
+  /* for iOS Safari */
+  position: relative;
+}
+
 header {
   display: flex;
   justify-content: space-between;
@@ -26,7 +33,8 @@ header {
   color: var(--textColor);
   
   top: 0;
-  z-index: 999;
+  position: relative; /* create stacking context for nav overlay */
+  z-index: 2147483647; /* ensure header and its fixed nav stack above page content */
 }
 
 nav a {
@@ -59,29 +67,49 @@ header .navbtn {
 }
 
 @media only screen and (max-width: 1180px ) {
+  /* Some layouts wrap header in a Headroom container with inline z-index: 1.
+     Force it above page content so our fixed nav overlay can stack correctly. */
+  .headroom, .headroom-wrapper {
+    position: relative;
+    z-index: 2147483647 !important;
+  }
+
   header .navbtn {
     visibility: visible;
     opacity: 1;
 
   }
   
+  /* Backdrop layer shown when menu is open to visually cover page content */
+  header.header-open::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #ffffff; /* fully opaque */
+    z-index: 2147483646; /* just below the nav overlay */
+    pointer-events: none; /* clicks go to nav overlay */
+  }
+
   header nav {
     position: fixed;
     overflow: hidden;
     top: 0;
     left: 0;
-    height: 120vh;
-    width: 100%;
+    height: 100vh; /* full viewport */
+    width: 100vw;
     display: flex;
     align-items: center;
     flex-direction: column;
     justify-content: center;
     gap: 1.5rem;
-    background-color: var(--mainColorLight);
+    background-color: #ffffff; /* opaque to entirely cover page content */
     transition: 0.5s;
-    transform: translateY(-120vh);
-    
-    
+    transform: translateY(-100vh);
+    z-index: 2147483647; /* sit above any page content */
+    pointer-events: auto;
   }
   header .responsive_nav {
     transform: none;
