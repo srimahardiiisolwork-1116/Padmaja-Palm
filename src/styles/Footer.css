@@ -31,6 +31,24 @@
     font-size: 2vh;
     padding: 2rem;
 }
+
+.sri-mahardii-link {
+    margin-top: 10px;
+    font-size: 2vh;
+    text-align: center;
+}
+
+.sri-mahardii-link a {
+    text-decoration: none;
+    color: black;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.sri-mahardii-link a:hover {
+    color: rgb(81, 81, 236);
+    text-decoration: underline;
+}
 .navs{
     display: flex;
     flex-direction: column;
@@ -100,5 +118,12 @@
     }
     .comp2{
         margin-top: 1rem;
+    }
+    .sri-mahardii-link {
+        font-size: 2vh;
+        margin-top: 15px;
+    }
+    .sri-mahardii-link a {
+        font-size: 1em;
     }
 }

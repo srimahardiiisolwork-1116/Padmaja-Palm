@@ -84,6 +84,9 @@ export default function Footer() {
       <div className="line" />
       <div className="copyright">
         <p>Copyright © PADMAJA PALM GROVES. All rights reserved.</p>
+        <p className="sri-mahardii-link">
+          Developed by <a href="https://www.srimahardiiisol.com/" target="_blank" rel="noopener noreferrer">Sri Mahardii Sol Private Limited</a>
+        </p>
       </div>
     </div>
   );
